@@ -43,7 +43,8 @@ Build a web-based chat application powered by LLM and agent.
 
 Requirements:
  - Your chatbot should utialize agent and general knowledge/reasoning of LLM to answer basic financial related questions
- - Persist all chat messages, use the database of your choice
+ - Provide some basic instructions in your prompt where financial knowledge is indicated
+ - All chat messages need to be persisted in database
  - The chatbot should have basic memory capability in order to carry coherent conversation
 
 You can choose any Open AI models as the LLM of your choice. We will provide a test Open AI key for you to use in your development.
