@@ -50,5 +50,5 @@ Requirements:
 You can choose any Open AI models as the LLM of your choice. We will provide a test Open AI key for you to use in your development.
 Feel free to directly use Open AI API calls or use any existing LLM frameworks like Langchain or Llamaindex.
 
-For simplicity, your agent can utilize free search API provided by https://tavily.com/. 
+For simplicity, you can use this free search API provided by https://tavily.com/ to power your agent. 
 
