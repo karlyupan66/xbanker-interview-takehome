@@ -1,0 +1,189 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Your Pro Financial Agent</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    .header {
+      text-align: center;
+      padding: 20px;
+      background-color: #4CAF50;
+      color: white;
+    }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    #chatbox {
+      display: flex;
+      flex-direction: column;
+    }
+    .message-container {
+      margin-bottom: 20px;
+      max-width: 70%;
+      min-width: 33%;  /* 设置最小宽度为页面宽度的三分之一 */
+    }
+    .message-container.user {
+      align-self: flex-end;
+    }
+    .message-container.agent {
+      align-self: flex-start;
+    }
+    .message {
+      padding: 10px;
+      border-radius: 10px;
+      width: 100%;  /* 确保消息填满容器 */
+      box-sizing: border-box;  /* 包括padding在内的总宽度 */
+    }
+    .message-container.user .message {
+      background-color: #87CEFA;  /* 天蓝色 */
+    }
+    .message-container.agent .message {
+      background-color: #aeee90;  /* 淡绿色 */
+    }
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 0.9em;
+      color: #333;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      padding-bottom: 5px;
+    }
+    .message-content {
+      margin-top: 5px;
+    }
+    .input-container {
+      display: flex;
+      padding: 20px;
+      background-color: white;
+    }
+    #user-input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+      min-height: 50px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 10px;
+      align-self: flex-end;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Your Pro Financial Agent</h1>
+  </div>
+  <div class="chat-container">
+    <div id="chatbox"></div>
+  </div>
+  <div class="input-container">
+    <textarea id="user-input" placeholder="Type a message..."></textarea>
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    function formatTimestamp(isoString) {
+      const date = new Date(isoString);
+      return date.toLocaleString();
+    }
+
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function addMessage(role, content, timestamp) {
+      const chatbox = document.getElementById("chatbox");
+      const messageContainer = document.createElement("div");
+      messageContainer.className = `message-container ${role === 'user' ? 'user' : 'agent'}`;
+      const formattedTime = formatTimestamp(timestamp);
+      // 移除多余的转义字符并进行 HTML 转义
+      const formattedContent = escapeHtml(content.replace(/\\n/g, '\n').replace(/\\/g, ''));
+      messageContainer.innerHTML = `
+        <div class="message">
+          <div class="message-header">
+            <span>${role === 'user' ? 'You' : 'Agent'}</span>
+            <span>${formattedTime}</span>
+          </div>
+          <div class="message-content">${formattedContent}</div>
+        </div>
+      `;
+      chatbox.appendChild(messageContainer);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    // 页面加载时获取聊天历史
+    window.onload = async function() {
+      try {
+        const response = await fetch('/chat_history');
+        const history = await response.json();
+        history.forEach(message => {
+          addMessage(message.role, message.content, message.timestamp);
+        });
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+      }
+    }
+
+    async function sendMessage() {
+      const userInput = document.getElementById("user-input");
+      const message = userInput.value;
+      if (message.trim() === '') return;
+
+      const currentTime = new Date().toISOString();
+      addMessage('user', message, currentTime);
+      userInput.value = '';
+
+      try {
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await response.json();
+        addMessage('bot', data.response, data.timestamp);
+      } catch (error) {
+        console.error('Error sending message:', error);
+        addMessage('bot', 'Error: Failed to get response', new Date().toISOString());
+      }
+    }
+
+    // 允许用户按 Ctrl+Enter 发送消息
+    document.getElementById("user-input").addEventListener("keydown", function(event) {
+      if (event.ctrlKey && event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
