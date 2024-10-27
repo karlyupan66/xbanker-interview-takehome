@@ -42,8 +42,7 @@ To obtain the historical returns you can use this free API https://www.worldtrad
 Build a web-based chat application powered by LLM and agent. 
 
 Requirements:
- - Your chatbot should utialize agent and general knowledge/reasoning of LLM to answer basic financial related questions
- - Provide some basic instructions in your prompt where financial knowledge is indicated
+ - Your chatbot should utilize agent and general knowledge/reasoning of LLM to answer basic financial related questions
  - All chat messages need to be persisted in database
  - The chatbot should have basic memory capability in order to carry coherent conversation
 
