@@ -138,15 +138,20 @@
       const messageContainer = document.createElement("div");
       messageContainer.className = `message-container ${role === 'user' ? 'user' : 'agent'}`;
       const formattedTime = formatTimestamp(timestamp);
+      
       // 移除多余的转义字符并进行 HTML 转义
       const formattedContent = escapeHtml(content.replace(/\\n/g, '\n').replace(/\\/g, ''));
+      
+      // 将换行符替换为 <br> 标签
+      const messageWithLineBreaks = formattedContent.replace(/\n/g, '<br>');
+
       messageContainer.innerHTML = `
         <div class="message">
           <div class="message-header">
             <span>${role === 'user' ? 'You' : 'Agent'}</span>
             <span>${formattedTime}</span>
           </div>
-          <div class="message-content">${formattedContent}</div>
+          <div class="message-content">${messageWithLineBreaks}</div>
         </div>
       `;
       chatbox.appendChild(messageContainer);
