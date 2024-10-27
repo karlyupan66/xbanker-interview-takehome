@@ -74,6 +74,10 @@ Your Pro Financial Agent 是一个基于 Flask 和 LangChain 的智能金融助�
 
 欢迎任何形式的贡献！如果您有建议或发现了错误，请提交问题或拉取请求。
 
+## Summary
+
+Most of the code is from the tutorial of LangChain. Cursor is used to write some code, especially the html part. In the case I am not familiar with the React.js, so I use the html part to at least perform the basic function. My core idea is to provide an open-and-use website that can be easily used by everyone. There are features to be added in the future, the nearest one is to allow multiple chats in the history.
+
 ## 许可证
 
 该项目使用 MIT 许可证。有关详细信息，请参阅 [LICENSE](LICENSE) 文件。
