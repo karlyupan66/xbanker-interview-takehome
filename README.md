@@ -1,54 +1,79 @@
-# Fullstack interview challenge
+# Your Pro Financial Agent
 
-You are given two options below and you can choose either one to work on. Make sure to keep things simple. Overall it should not take more than four hours to complete.
-The challenges contain both frontend and backend components with emphasis more on the backend side.
+## 简介
 
-What we are looking for?
- - Fully functional and working code that we can run.
- - Code quality. We value readable and modular code
- - Tests. Treat this project as if it is meant to be deployed to production
+Your Pro Financial Agent 是一个基于 Flask 和 LangChain 的智能金融助手，旨在帮助用户解答各种金融问题，包括投资策略、理财建议、市场分析等。该应用程序使用 OpenAI 的 GPT 模型来生成响应，并能够记录和回顾用户的对话历史。
 
-Things to keep in mind:
-- Use any frontend framework of your choice; the focus should be on frontend logic rather than style
-  - Some frontend frameworks: (https://ant.design/, https://mui.com/material-ui/, https://preline.co/, etc...)
-- Use any backendend languange and framework of your choice
-  - Some backend frameworks: (fastapi, flask, ktor, etc..)
-- Choose any database technologies you see fit
+## 功能
 
-# Challenge
+- **智能对话**：用户可以与金融助手进行自然语言对话，获取实时的金融建议和信息。
+- **对话历史记录**：应用程序会记录用户的对话历史，用户可以随时查看之前的对话。
+- **自我介绍**：在首次使用时，助手会提供自我介绍，帮助用户了解其功能。
+- **总结与询问**：在对话结束时，助手会总结之前的对话并询问用户是否需要进一步的帮助。
+- **清除聊天记录**：用户可以选择清除所有聊天记录，重新开始对话。
 
-## Option 1: Portfolio Performance
+## 安装与使用
 
-Build a SPA application where portfolio managers can enter their client's assets portfolio distributions at some past date and see how much money would be worth today.
+### 先决条件
 
-#### Example: 
-- Client name: John Smith 
-- Start Date: 2024-01-10
-- Initial Balance: $500K
-- Portfolio Allocation:
-  - AAPL: 20%
-  - GOOG: 80%
+确保您的系统上已安装以下软件：
 
-The app should show client's individual stock performance and overall portfolio return. Basic requirement is to show these data as a table. 
-Optionally feel free to visualize the output as you see fit (Aggregate portfolio returns chart, Portfolio Allocation evolution over time, etc). 
+- Python 3.7 或更高版本
+- pip（Python 包管理器）
 
-Additionally the app should allow portfolio managers to view all previous request data, i.e. list of previous searchs PM initiated. 
-You can display these past searches as a table where client name and time are shown, you can show the actual portfolio performance data upon click.
+### 安装步骤
 
-To obtain the historical returns you can use this free API https://www.worldtradingdata.com/
+1. **克隆仓库**：
 
-## Option 2: Financial assistant chatbot
+   ```bash
+   git clone <repository-url>
+   cd <repository-directory>
+   ```
 
-Build a web-based chat application powered by LLM and agent. 
+2. **创建虚拟环境（可选）**：
 
-Requirements:
- - Your chatbot should utialize agent and general knowledge/reasoning of LLM to answer basic financial related questions
- - Provide some basic instructions in your prompt where financial knowledge is indicated
- - All chat messages need to be persisted in database
- - The chatbot should have basic memory capability in order to carry coherent conversation
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # 在 Windows 上使用 venv\Scripts\activate
+   ```
 
-You can choose any Open AI models as the LLM of your choice. We will provide a test Open AI key for you to use in your development.
-Feel free to directly use Open AI API calls or use any existing LLM frameworks like Langchain or Llamaindex.
+3. **安装依赖**：
 
-For simplicity, you can use this free search API provided by https://tavily.com/ to power your agent. 
+   ```bash
+   pip install -r requirements.txt
+   ```
 
+4. **设置环境变量**：
+
+   创建一个 `.env` 文件，并添加以下内容：
+
+   ```plaintext
+   OPENAI_API_KEY=your_openai_api_key
+   TAVILY_API_KEY=your_tavily_api_key
+   ```
+
+   请确保将 `your_openai_api_key` 和 `your_tavily_api_key` 替换为您自己的 API 密钥。
+
+5. **运行应用程序**：
+
+   ```bash
+   python app.py
+   ```
+
+6. **访问应用程序**：
+
+   打开浏览器并访问 `http://127.0.0.1:5000`。
+
+## 使用说明
+
+- 在聊天框中输入您的问题或请求，然后点击“发送”按钮或按 `Ctrl + Enter` 发送消息。
+- 您可以随时查看之前的对话记录，助手会根据历史记录提供更相关的响应。
+- 点击“清除聊天”按钮可以清除所有聊天记录并重新开始对话。
+
+## 贡献
+
+欢迎任何形式的贡献！如果您有建议或发现了错误，请提交问题或拉取请求。
+
+## 许可证
+
+该项目使用 MIT 许可证。有关详细信息，请参阅 [LICENSE](LICENSE) 文件。
