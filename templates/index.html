@@ -92,11 +92,23 @@
       margin-left: 10px;
       align-self: flex-end;
     }
+    #clear-chat {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Your Pro Financial Agent</h1>
+    <button id="clear-chat" onclick="clearChat()">Clear Chat</button>
   </div>
   <div class="chat-container">
     <div id="chatbox"></div>
@@ -141,18 +153,77 @@
       chatbox.scrollTop = chatbox.scrollHeight;
     }
 
-    // 页面加载时获取聊天历史
-    window.onload = async function() {
+    async function loadChatHistory() {
       try {
         const response = await fetch('/chat_history');
         const history = await response.json();
-        history.forEach(message => {
-          addMessage(message.role, message.content, message.timestamp);
-        });
+        if (history.length === 0) {
+          // 如果没有历史记录，发送自我介绍
+          sendInitialMessage();
+        } else {
+          history.forEach(message => {
+            addMessage(message.role, message.content, message.timestamp);
+          });
+          // 检查是否有完整的对话
+          let hasCompleteConversation = false;
+          for (let i = 0; i < history.length - 1; i++) {
+            if (history[i].role === 'user' && history[i+1].role === 'assistant') {
+              hasCompleteConversation = true;
+              break;
+            }
+          }
+          if (hasCompleteConversation) {
+            // 只有在有完整对话时才发送总结和询问
+            sendSummaryAndInquiry();
+          }
+        }
+        scrollToBottom();
       } catch (error) {
         console.error('Error loading chat history:', error);
       }
     }
+
+    function scrollToBottom() {
+      const chatbox = document.getElementById("chatbox");
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    async function sendInitialMessage() {
+      try {
+        const response = await fetch('/initial_message', { method: 'POST' });
+        const data = await response.json();
+        addMessage('bot', data.response, data.timestamp);
+        scrollToBottom();
+      } catch (error) {
+        console.error('Error sending initial message:', error);
+      }
+    }
+
+    async function sendSummaryAndInquiry() {
+      try {
+        const response = await fetch('/summary_and_inquiry', { method: 'POST' });
+        const data = await response.json();
+        addMessage('bot', data.response, data.timestamp);
+        scrollToBottom();
+      } catch (error) {
+        console.error('Error sending summary and inquiry:', error);
+      }
+    }
+
+    async function clearChat() {
+      if (confirm("Are you sure you want to clear all chat history?")) {
+        try {
+          await fetch('/clear_chat', { method: 'POST' });
+          document.getElementById("chatbox").innerHTML = '';
+          sendInitialMessage();
+        } catch (error) {
+          console.error('Error clearing chat:', error);
+        }
+      }
+    }
+
+    // 页面加载时获取聊天历史
+    window.onload = loadChatHistory;
 
     async function sendMessage() {
       const userInput = document.getElementById("user-input");

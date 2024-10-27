@@ -75,7 +75,7 @@ template = """你是一个专业的金融顾问助手。使用以下工具来回
 使用以下格式：
 
 人类: 人类的输入问题
-思考: 你应该总是思考下一步该做什么
+思考: 你应该总是思考���一步该做什么
 行动: 工具名称 -> 输入工具的参数
 观察: 工具的输出
 ... (这个思考/行动/观察可以重复多次)
@@ -142,7 +142,7 @@ agent_executor = AgentExecutor.from_agent_and_tools(
 )
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///your_database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
 db.init_app(app)
 
 with app.app_context():
@@ -150,7 +150,7 @@ with app.app_context():
 
 @app.route('/')
 def home():
-    return render_template('index.html')  # 或者返回您想要的内容
+    return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -162,7 +162,7 @@ def chat():
     db.session.commit()
     
     # 使用Agent生成回复
-    response = agent_executor.run(user_message)
+    response = llm.predict(user_message)
     
     # 保存AI回复到数据库
     ai_msg = ChatMessage(role='assistant', content=response)
@@ -179,6 +179,68 @@ def get_chat_history():
     messages = ChatMessage.query.order_by(ChatMessage.timestamp).all()
     history = [msg.to_dict() for msg in messages]
     return jsonify(history)
+
+@app.route('/initial_message', methods=['POST'])
+def initial_message():
+    intro = "你好！我是你的专业金融助手。我可以帮助你解答各种金融问题，包括投资策略、理财建议、市场分析等。有什么我可以帮到你的吗？"
+    ai_msg = ChatMessage(role='assistant', content=intro)
+    db.session.add(ai_msg)
+    db.session.commit()
+    return jsonify({
+        'response': intro,
+        'timestamp': ai_msg.timestamp.isoformat()
+    })
+
+@app.route('/summary_and_inquiry', methods=['POST'])
+def summary_and_inquiry():
+    # 获取最后几条消息
+    last_messages = ChatMessage.query.order_by(ChatMessage.timestamp.desc()).limit(10).all()
+    last_messages.reverse()
+    
+    # 检查是否有完整的对话（用户问题和bot回答）
+    has_complete_conversation = False
+    for i in range(len(last_messages) - 1):
+        if last_messages[i].role == 'user' and last_messages[i+1].role == 'assistant':
+            has_complete_conversation = True
+            break
+    
+    if not has_complete_conversation:
+        # 如果没有完整的对话，返回一个通用的问候语
+        greeting = "有什么我可以帮到你的吗？"
+        ai_msg = ChatMessage(role='assistant', content=greeting)
+        db.session.add(ai_msg)
+        db.session.commit()
+        return jsonify({
+            'response': greeting,
+            'timestamp': ai_msg.timestamp.isoformat()
+        })
+    
+    context = "\n".join([f"{msg.role}: {msg.content}" for msg in last_messages])
+    
+    prompt = f"""
+    基于以下对话内容：
+
+    {context}
+
+    请用两句话总结上一轮对话，然后询问今天有什么可以帮忙的。
+    """
+    
+    response = llm.predict(prompt)
+    
+    ai_msg = ChatMessage(role='assistant', content=response)
+    db.session.add(ai_msg)
+    db.session.commit()
+    
+    return jsonify({
+        'response': response,
+        'timestamp': ai_msg.timestamp.isoformat()
+    })
+
+@app.route('/clear_chat', methods=['POST'])
+def clear_chat():
+    ChatMessage.query.delete()
+    db.session.commit()
+    return jsonify({'status': 'success'})
 
 if __name__ == '__main__':
     app.run(debug=True)
