@@ -16,6 +16,11 @@ from langchain.chains import ConversationChain
 import re
 from dotenv import load_dotenv
 from datetime import datetime
+from langchain_community.tools.tavily_search import TavilySearchResults
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # 加载环境变量
 load_dotenv()
@@ -45,27 +50,17 @@ class ChatMessage(db.Model):
             'timestamp': self.timestamp.isoformat()
         }
 
-# 定义Tavily搜索工具
-def tavily_search(query: str) -> str:
-    url = "https://api.tavily.com/search"
-    params = {
-        "api_key": TAVILY_API_KEY,
-        "query": query,
-        "search_depth": "advanced",
-        "include_images": False,
-        "include_answer": True,
-    }
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        return response.json()["answer"]
-    else:
-        return f"搜索失败: {response.status_code}"
+# 初始化 Tavily 搜索工具
+tavily_tool = TavilySearchResults(tavily_api_key=TAVILY_API_KEY)
 
-search_tool = Tool(
-    name="internet_search",  # 修改这里：使用英文名称
-    func=tavily_search,
-    description="当你需要查找最新或具体的信息时使用这个工具。"
-)
+# 定义搜索工具
+tools = [
+    Tool(
+        name="Internet_Search",
+        func=tavily_tool.run,
+        description="This tool performs internet searches to find up-to-date information on any topic, including current events, financial data, and stock market news. Use this tool whenever you need to access recent information or specific data that you don't have."
+    )
+]
 
 # 定义提示模板
 template = """你是一个专业的金融顾问助手。使用以下工具来回答用户的问题：
@@ -75,7 +70,7 @@ template = """你是一个专业的金融顾问助手。使用以下工具来回
 使用以下格式：
 
 人类: 人类的输入问题
-思考: 你应该总是思考���一步该做什么
+思考: 你应该总是思考下一步该做什么
 行动: 工具名称 -> 输入工具的参数
 观察: 工具的输出
 ... (这个思考/行动/观察可以重复多次)
@@ -104,7 +99,7 @@ class CustomPromptTemplate(StringPromptTemplate):
 
 prompt = CustomPromptTemplate(
     template=template,
-    tools=[search_tool],
+    tools=tools,
     input_variables=["input", "intermediate_steps"]
 )
 
@@ -130,13 +125,12 @@ class CustomOutputParser:
 
 # 初始化LLM和Agent
 llm_chain = LLMChain(llm=llm, prompt=prompt)
-tool_names = [tool.name for tool in [search_tool]]
-agent = OpenAIFunctionsAgent.from_llm_and_tools(llm=llm, tools=[search_tool])
+agent = OpenAIFunctionsAgent.from_llm_and_tools(llm=llm, tools=tools)
 
 memory = ConversationBufferMemory(memory_key="chat_history")
 agent_executor = AgentExecutor.from_agent_and_tools(
     agent=agent, 
-    tools=[search_tool], 
+    tools=tools, 
     verbose=True, 
     memory=memory
 )
@@ -155,14 +149,19 @@ def home():
 @app.route('/chat', methods=['POST'])
 def chat():
     user_message = request.json['message']
+    logger.debug(f"Received user message: {user_message}")
     
     # 保存用户消息到数据库
     user_msg = ChatMessage(role='user', content=user_message)
     db.session.add(user_msg)
     db.session.commit()
     
-    # 使用Agent生成回复
-    response = llm.predict(user_message)
+    try:
+        response = agent_executor.run(user_message)
+        logger.debug(f"Agent response: {response}")
+    except Exception as e:
+        logger.error(f"Error in agent execution: {str(e)}")
+        response = "抱歉，处理您的请求时出现了错误。我们正在努力解决这个问题。在此期间，您可以尝试重新表述您的问题，或者直接在浏览器中搜索相关信息。"
     
     # 保存AI回复到数据库
     ai_msg = ChatMessage(role='assistant', content=response)
@@ -241,6 +240,22 @@ def clear_chat():
     ChatMessage.query.delete()
     db.session.commit()
     return jsonify({'status': 'success'})
+
+def test_tavily_api():
+    url = "https://api.tavily.com/search"
+    params = {
+        "api_key": TAVILY_API_KEY,
+        "query": "美股今日要闻",
+        "search_depth": "advanced",
+    }
+    response = requests.get(url, params=params)
+    logger.debug(f"Tavily API response status: {response.status_code}")
+    logger.debug(f"Tavily API response content: {response.text}")
+    return response.json() if response.status_code == 200 else None
+
+# 在 app.py 的某个地方调用这个函数进行测试
+test_result = test_tavily_api()
+logger.debug(f"Tavily API test result: {test_result}")
 
 if __name__ == '__main__':
     app.run(debug=True)
