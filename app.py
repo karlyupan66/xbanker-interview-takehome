@@ -15,7 +15,7 @@ from langchain_community.llms import OpenAI
 from langchain.chains import ConversationChain
 import re
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 from langchain_community.tools.tavily_search import TavilySearchResults
 import logging
 
@@ -156,8 +156,15 @@ def chat():
     db.session.add(user_msg)
     db.session.commit()
     
+    # 获取最近的对话记录（最多五条）
+    one_day_ago = datetime.utcnow() - timedelta(days=1)
+    recent_messages = ChatMessage.query.filter(ChatMessage.timestamp >= one_day_ago).order_by(ChatMessage.timestamp.desc()).limit(5).all()
+    recent_messages.reverse()  # 反转顺序以便从最早的开始
+    context = "\n".join([f"{msg.role}: {msg.content}" for msg in recent_messages])
+    
+    # 将用户消息和上下文传递给 agent
     try:
-        response = agent_executor.run(user_message)
+        response = agent_executor.run(f"{context}\n用户: {user_message}")
         logger.debug(f"Agent response: {response}")
     except Exception as e:
         logger.error(f"Error in agent execution: {str(e)}")
@@ -181,7 +188,10 @@ def get_chat_history():
 
 @app.route('/initial_message', methods=['POST'])
 def initial_message():
-    intro = "你好！我是你的专业金融助手。我可以帮助你解答各种金融问题，包括投资策略、理财建议、市场分析等。有什么我可以帮到你的吗？"
+    intro = (
+        "你好！我是你的专业金融助手。我可以帮助你解答各种金融问题，包括投资策略、理财建议、市场分析等。有什么我可以帮到你的吗？\n"
+        "Hi! I am your professional financial assistant. I can help you with various financial questions, including investment strategies, financial advice, market analysis, etc. How may I assist you today?"
+    )
     ai_msg = ChatMessage(role='assistant', content=intro)
     db.session.add(ai_msg)
     db.session.commit()
