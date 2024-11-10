@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金融智能客服</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .chat-box { width: 80%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px; }
+        .message { margin: 10px 0; padding: 10px; border-radius: 8px; }
+        .user-message { background-color: #e1f5fe; text-align: left; }
+        .bot-message { background-color: #ffeb3b; text-align: left; }
+        .input-box { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; }
+        button { padding: 10px 20px; background-color: #2196F3; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="chat-box" id="chat-box">
+    <div id="messages"></div>
+    <textarea id="user-input" class="input-box" placeholder="输入你的问题..."></textarea>
+    <button onclick="sendMessage()">发送</button>
+</div>
+
+<script>
+    let conversationId = "conversationId1";  // 存储会话ID，若用户重新加载页面会创建一个新会话
+    let userId = "userId1";  // 假设有一个用户ID
+
+    async function sendMessage() {
+        const userMessage = document.getElementById('user-input').value;
+        if (userMessage.trim() === "") return;
+
+        addMessage(userMessage, 'user');
+        document.getElementById('user-input').value = "";  // 清空输入框
+
+        const response = await fetch('/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [{ role: 'user', content: userMessage }],
+                userId: userId,
+                conversationId: conversationId,
+                stream: false
+            })
+        });
+
+        const result = await response.json();
+        addMessage(result.choices[0].message.content, 'assistant');
+    }
+
+    function addMessage(content, role) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', role === 'user' ? 'user-message' : 'bot-message');
+        messageDiv.textContent = content;
+        document.getElementById('messages').appendChild(messageDiv);
+        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    }
+</script>
+</body>
+</html>
